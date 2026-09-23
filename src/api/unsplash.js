@@ -10,6 +10,11 @@ const unsplashClient = axios.create({
 export const fetchWallpapers = (page = 1) =>
   unsplashClient.get("/photos", { params: { per_page: 30, page } });
 
+export const searchWallpapers = (query, page = 1) =>
+  unsplashClient.get("/search/photos", {
+    params: { query, page, per_page: 30 },
+  });
+
 export const getWallpaperById = (id) => unsplashClient.get(`/photos/${id}`);
 
 export default unsplashClient;

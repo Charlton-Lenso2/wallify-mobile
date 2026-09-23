@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   StyleSheet,
   View,
@@ -24,21 +24,31 @@ export default function HomeScreen() {
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const isFetching = useRef(false); // synchronous lock, unlike state
 
   const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore) return;
+    if (isFetching.current || !hasMore) return;
+    isFetching.current = true;
     setLoadingMore(true);
     try {
       const res = await fetchWallpapers(page);
-      if (res.data.length === 0) setHasMore(false);
-      setWallpapers((prev) => [...prev, ...res.data]);
-      setPage((p) => p + 1);
+      if (res.data.length === 0) {
+        setHasMore(false);
+      } else {
+        setWallpapers((prev) => {
+          const existingIds = new Set(prev.map((w) => w.id));
+          const newOnes = res.data.filter((w) => !existingIds.has(w.id));
+          return [...prev, ...newOnes];
+        });
+        setPage((p) => p + 1);
+      }
     } catch (err) {
       console.log("Error fetching wallpapers:", err);
     } finally {
       setLoadingMore(false);
+      isFetching.current = false;
     }
-  }, [page, loadingMore, hasMore]);
+  }, [page, hasMore]);
 
   useEffect(() => {
     loadMore();

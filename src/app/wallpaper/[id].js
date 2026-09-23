@@ -24,9 +24,18 @@ export default function WallpaperDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log("Fetching wallpaper with id:", id);
     getWallpaperById(id)
-      .then((res) => setWallpaper(res.data))
-      .catch((err) => console.log("Error fetching wallpaper:", err))
+      .then((res) => {
+        console.log("Wallpaper data received:", res.data?.urls);
+        setWallpaper(res.data);
+      })
+      .catch((err) => {
+        console.log(
+          "Error fetching wallpaper:",
+          err.response?.data || err.message,
+        );
+      })
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -55,6 +64,7 @@ export default function WallpaperDetail() {
         style={styles.image}
         contentFit="cover"
         transition={200}
+        onError={(e) => console.log("Image load error:", e.error)}
       />
 
       <Pressable onPress={() => router.back()} style={styles.backButton}>

@@ -46,6 +46,7 @@ function RootStack() {
     >
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="wallpaper/[id]" options={{ headerShown: false }} />
       <Stack.Screen
         name="privacy-policy"
         options={{ title: "Privacy Policy" }}
