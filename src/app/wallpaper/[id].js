@@ -6,11 +6,17 @@ import {
   ActivityIndicator,
   Pressable,
   Text,
+  Alert,
 } from "react-native";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import * as FileSystem from "expo-file-system";
+import * as MediaLibrary from "expo-media-library";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "../../config/firebase";
+import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import { getWallpaperById } from "../../api/unsplash";
 
@@ -20,24 +26,79 @@ export default function WallpaperDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { colors, activeScheme } = useTheme();
+  const { user } = useAuth();
   const [wallpaper, setWallpaper] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [liked, setLiked] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
-    console.log("Fetching wallpaper with id:", id);
     getWallpaperById(id)
-      .then((res) => {
-        console.log("Wallpaper data received:", res.data?.urls);
-        setWallpaper(res.data);
-      })
-      .catch((err) => {
-        console.log(
-          "Error fetching wallpaper:",
-          err.response?.data || err.message,
-        );
-      })
+      .then((res) => setWallpaper(res.data))
+      .catch((err) => console.log("Error fetching wallpaper:", err.message))
       .finally(() => setLoading(false));
-  }, [id]);
+
+    if (user) {
+      const ref = doc(db, "users", user.uid, "wallpaperInteractions", id);
+      getDoc(ref).then((snap) => {
+        if (snap.exists()) {
+          setLiked(!!snap.data().liked);
+          setSaved(!!snap.data().saved);
+        }
+      });
+    }
+  }, [id, user]);
+
+  const updateInteraction = async (fields) => {
+    if (!user) return;
+    const ref = doc(db, "users", user.uid, "wallpaperInteractions", id);
+    await setDoc(ref, fields, { merge: true });
+  };
+
+  const toggleLike = () => {
+    const next = !liked;
+    setLiked(next);
+    updateInteraction({ liked: next });
+  };
+
+  const toggleSave = () => {
+    const next = !saved;
+    setSaved(next);
+    updateInteraction({ saved: next });
+  };
+
+  const handleNotInterested = async () => {
+    await updateInteraction({ notInterested: true });
+    router.back();
+  };
+
+  const handleDownload = async () => {
+    if (!wallpaper) return;
+    setDownloading(true);
+    try {
+      const permission = await MediaLibrary.requestPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(
+          "Permission needed",
+          "Allow photo library access to save wallpapers.",
+        );
+        return;
+      }
+      const fileUri = FileSystem.documentDirectory + `wallify-${id}.jpg`;
+      const { uri } = await FileSystem.downloadAsync(
+        wallpaper.urls.full,
+        fileUri,
+      );
+      await MediaLibrary.saveToLibraryAsync(uri);
+      Alert.alert("Saved", "Wallpaper saved to your photos.");
+    } catch (err) {
+      console.log("Download error:", err.message);
+      Alert.alert("Download failed", "Something went wrong. Try again.");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -57,6 +118,8 @@ export default function WallpaperDetail() {
     );
   }
 
+  const iconColor = activeScheme === "dark" ? "#fff" : "#000";
+
   return (
     <View style={styles.container}>
       <Image
@@ -64,7 +127,6 @@ export default function WallpaperDetail() {
         style={styles.image}
         contentFit="cover"
         transition={200}
-        onError={(e) => console.log("Image load error:", e.error)}
       />
 
       <Pressable onPress={() => router.back()} style={styles.backButton}>
@@ -73,11 +135,7 @@ export default function WallpaperDetail() {
           tint={activeScheme === "dark" ? "dark" : "light"}
           style={styles.blurCircle}
         >
-          <Ionicons
-            name="close"
-            size={22}
-            color={activeScheme === "dark" ? "#fff" : "#000"}
-          />
+          <Ionicons name="close" size={22} color={iconColor} />
         </BlurView>
       </Pressable>
 
@@ -88,24 +146,31 @@ export default function WallpaperDetail() {
           style={styles.bottomBlur}
         >
           <ActionButton
-            icon="heart-outline"
+            icon={liked ? "heart" : "heart-outline"}
             label="Like"
-            dark={activeScheme === "dark"}
+            active={liked}
+            color={iconColor}
+            onPress={toggleLike}
           />
           <ActionButton
-            icon="bookmark-outline"
+            icon={saved ? "bookmark" : "bookmark-outline"}
             label="Save"
-            dark={activeScheme === "dark"}
+            active={saved}
+            color={iconColor}
+            onPress={toggleSave}
           />
           <ActionButton
             icon="download-outline"
             label="Download"
-            dark={activeScheme === "dark"}
+            color={iconColor}
+            onPress={handleDownload}
+            loading={downloading}
           />
           <ActionButton
             icon="close-circle-outline"
             label="Not interested"
-            dark={activeScheme === "dark"}
+            color={iconColor}
+            onPress={handleNotInterested}
           />
         </BlurView>
       </View>
@@ -113,13 +178,15 @@ export default function WallpaperDetail() {
   );
 }
 
-function ActionButton({ icon, label, dark }) {
+function ActionButton({ icon, label, color, active, onPress, loading }) {
   return (
-    <Pressable style={styles.actionButton}>
-      <Ionicons name={icon} size={24} color={dark ? "#fff" : "#000"} />
-      <Text style={[styles.actionLabel, { color: dark ? "#fff" : "#000" }]}>
-        {label}
-      </Text>
+    <Pressable style={styles.actionButton} onPress={onPress} disabled={loading}>
+      {loading ? (
+        <ActivityIndicator size="small" color={color} />
+      ) : (
+        <Ionicons name={icon} size={24} color={active ? "#3478F6" : color} />
+      )}
+      <Text style={[styles.actionLabel, { color }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -145,6 +212,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     overflow: "hidden",
   },
-  actionButton: { alignItems: "center", gap: 4 },
+  actionButton: { alignItems: "center", gap: 4, minWidth: 60 },
   actionLabel: { fontSize: 11 },
 });

@@ -1,5 +1,10 @@
 import { useEffect } from "react";
-import { Stack, useRouter, useSegments } from "expo-router";
+import {
+  Stack,
+  useRouter,
+  useSegments,
+  useRootNavigationState,
+} from "expo-router";
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { ActivityIndicator, View } from "react-native";
@@ -9,9 +14,10 @@ function RootStack() {
   const { user, initializing } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const navigationState = useRootNavigationState();
 
   useEffect(() => {
-    if (initializing) return;
+    if (initializing || !navigationState?.key) return;
     const inAuthGroup = segments[0] === "(auth)";
 
     if (!user && !inAuthGroup) {
@@ -19,9 +25,9 @@ function RootStack() {
     } else if (user && inAuthGroup) {
       router.replace("/");
     }
-  }, [user, initializing, segments]);
+  }, [user, initializing, navigationState?.key, segments, router]);
 
-  if (initializing) {
+  if (initializing || !navigationState?.key) {
     return (
       <View
         style={{
@@ -52,6 +58,7 @@ function RootStack() {
         options={{ title: "Privacy Policy" }}
       />
       <Stack.Screen name="terms" options={{ title: "Terms of Use" }} />
+      <Stack.Screen name="saved" options={{ title: "Saved" }} />
     </Stack>
   );
 }

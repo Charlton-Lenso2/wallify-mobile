@@ -95,6 +95,12 @@ export default function Profile() {
       >
         <Text style={{ color: colors.text }}>Log Out</Text>
       </Pressable>
+      <Pressable
+        onPress={() => router.push("/saved")}
+        style={[styles.savedButton, { borderColor: colors.border }]}
+      >
+        <Text style={{ color: colors.text }}>Saved Wallpapers</Text>
+      </Pressable>
     </View>
   );
 }
@@ -136,5 +142,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     borderRadius: 12,
     borderWidth: 1,
+  },
+  savedButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 12,
   },
 });

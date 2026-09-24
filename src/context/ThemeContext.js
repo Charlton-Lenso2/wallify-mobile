@@ -41,14 +41,13 @@ export function ThemeProvider({ children }) {
     await AsyncStorage.setItem(THEME_KEY, value);
   };
 
-  const activeScheme = preference === "system" ? systemScheme : preference;
+  const activeScheme =
+    preference === "system" ? systemScheme || "light" : preference;
   const colors = activeScheme === "dark" ? darkColors : lightColors;
-
-  if (!loaded) return null; // or a splash/loading screen
 
   return (
     <ThemeContext.Provider
-      value={{ colors, preference, setThemePreference, activeScheme }}
+      value={{ colors, preference, setThemePreference, activeScheme, loaded }}
     >
       {children}
     </ThemeContext.Provider>
