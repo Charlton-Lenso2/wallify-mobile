@@ -47,6 +47,7 @@ function RootStack() {
       screenOptions={{
         headerStyle: { backgroundColor: colors.card },
         headerTintColor: colors.text,
+        headerBackTitle: "Back",
         contentStyle: { backgroundColor: colors.background },
       }}
     >
@@ -55,10 +56,16 @@ function RootStack() {
       <Stack.Screen name="wallpaper/[id]" options={{ headerShown: false }} />
       <Stack.Screen
         name="privacy-policy"
-        options={{ title: "Privacy Policy" }}
+        options={{ title: "Privacy Policy", headerBackTitle: "Back" }}
       />
-      <Stack.Screen name="terms" options={{ title: "Terms of Use" }} />
-      <Stack.Screen name="saved" options={{ title: "Saved" }} />
+      <Stack.Screen
+        name="terms"
+        options={{ title: "Terms of Use", headerBackTitle: "Back" }}
+      />
+      <Stack.Screen
+        name="saved"
+        options={{ title: "Saved", headerBackTitle: "Back" }}
+      />
     </Stack>
   );
 }

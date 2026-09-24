@@ -7,13 +7,12 @@ import {
   Pressable,
   Text,
   Alert,
+  Platform,
 } from "react-native";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import * as FileSystem from "expo-file-system";
-import * as MediaLibrary from "expo-media-library";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../../config/firebase";
 import { useAuth } from "../../context/AuthContext";
@@ -75,8 +74,21 @@ export default function WallpaperDetail() {
 
   const handleDownload = async () => {
     if (!wallpaper) return;
+
+    if (Platform.OS === "web") {
+      Alert.alert(
+        "Download unavailable",
+        "Wallpaper downloads are supported on mobile devices.",
+      );
+      return;
+    }
+
     setDownloading(true);
     try {
+      const [{ default: FileSystem }, MediaLibrary] = await Promise.all([
+        import("expo-file-system"),
+        import("expo-media-library"),
+      ]);
       const permission = await MediaLibrary.requestPermissionsAsync();
       if (!permission.granted) {
         Alert.alert(

@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
+import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { updateProfile } from "firebase/auth";
@@ -18,6 +19,7 @@ import { useAuth } from "../../context/AuthContext";
 export default function Profile() {
   const { colors } = useTheme();
   const { user, logout } = useAuth();
+  const router = useRouter();
   const [uploading, setUploading] = useState(false);
   const [photoURL, setPhotoURL] = useState(user?.photoURL || null);
 
@@ -90,16 +92,17 @@ export default function Profile() {
       <Text style={[styles.email, { color: colors.text }]}>{user?.email}</Text>
 
       <Pressable
-        onPress={logout}
-        style={[styles.logoutButton, { borderColor: colors.border }]}
-      >
-        <Text style={{ color: colors.text }}>Log Out</Text>
-      </Pressable>
-      <Pressable
         onPress={() => router.push("/saved")}
         style={[styles.savedButton, { borderColor: colors.border }]}
       >
         <Text style={{ color: colors.text }}>Saved Wallpapers</Text>
+      </Pressable>
+
+      <Pressable
+        onPress={logout}
+        style={[styles.logoutButton, { borderColor: colors.border }]}
+      >
+        <Text style={{ color: colors.text }}>Log Out</Text>
       </Pressable>
     </View>
   );
@@ -136,18 +139,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   editBadgeText: { color: "#fff", fontSize: 12 },
-  email: { fontSize: 16, marginBottom: 32 },
-  logoutButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
+  email: { fontSize: 16, marginBottom: 20 },
   savedButton: {
     paddingVertical: 12,
     paddingHorizontal: 32,
     borderRadius: 12,
     borderWidth: 1,
     marginBottom: 12,
+  },
+  logoutButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    borderWidth: 1,
   },
 });
